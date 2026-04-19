@@ -3,11 +3,11 @@ export function normalizeText(text) {
 }
 
 export function splitSentences(text) {
-  const cleaned = normalizeText(text);
+  const cleaned = (text || "").trim();
   if (!cleaned) return [];
 
   const parts = cleaned
-    .split(/(?<=[.!?])\s+/)
+    .split(/(?:\r?\n)+|(?<=[.!?])\s+/)
     .map((item) => item.trim())
     .filter(Boolean);
 
@@ -20,6 +20,6 @@ export function splitWords(text) {
 
   return cleaned
     .split(/\s+/)
-    .map((word) => word.replace(/^[^A-Za-z0-9']+|[^A-Za-z0-9']+$/g, ""))
+    .map((word) => word.replace(/^[^A-Za-z0-9'-]+|[^A-Za-z0-9'-]+$/g, ""))
     .filter(Boolean);
 }

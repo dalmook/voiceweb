@@ -159,13 +159,18 @@ button:disabled {
   font-size: 0.9rem;
 }
 
+.segment.active {
+  background: #2f6fed;
+  color: #fff;
+}
+
 @media (min-width: 740px) {
   .card {
     padding: 1.2rem;
   }
 
   .button-row {
-    grid-template-columns: repeat(3, max-content);
+    grid-template-columns: repeat(4, max-content);
     justify-content: start;
   }
 

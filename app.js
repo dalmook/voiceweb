@@ -15,14 +15,14 @@ const els = {
   ocrBtn: document.querySelector("#ocr-btn"),
   useOcrBtn: document.querySelector("#use-ocr-btn"),
   copyOcrBtn: document.querySelector("#copy-ocr-btn"),
+  playAllBtn: document.querySelector("#play-all-btn"),
   playWordsBtn: document.querySelector("#play-words-btn"),
   playSentencesBtn: document.querySelector("#play-sentences-btn"),
   stopBtn: document.querySelector("#stop-btn"),
   dictationBtn: document.querySelector("#dictation-btn"),
   repeatCount: document.querySelector("#repeat-count"),
   pauseMs: document.querySelector("#pause-ms"),
-  rateRange: document.querySelector("#rate-range"),
-  pitchRange: document.querySelector("#pitch-range"),
+  rateSelect: document.querySelector("#rate-select"),
   voiceSelect: document.querySelector("#voice-select"),
   status: document.querySelector("#status-message"),
   preview: document.querySelector("#preview"),
@@ -40,13 +40,23 @@ function getCurrentText() {
   return els.inputText.value.trim();
 }
 
-function renderPreview(items) {
+function renderPreview(items = []) {
   if (!items.length) {
     els.preview.textContent = "미리보기 항목이 없습니다.";
     return;
   }
 
-  els.preview.innerHTML = items.map((item) => `<span class="segment">${item}</span>`).join("");
+  els.preview.innerHTML = items
+    .map((item, idx) => `<span class="segment" data-idx="${idx}">${item}</span>`)
+    .join("");
+}
+
+function highlightSegment(index) {
+  const chips = els.preview.querySelectorAll(".segment");
+  chips.forEach((chip) => {
+    const active = Number(chip.dataset.idx) === index;
+    chip.classList.toggle("active", active);
+  });
 }
 
 function setOCRLoading(isLoading) {
@@ -79,6 +89,7 @@ function renderImagePreview(file) {
 
 function fillVoiceSelect() {
   const voices = tts.listVoices();
+  const englishVoices = tts.listEnglishVoices();
   els.voiceSelect.innerHTML = "";
 
   if (!voices.length) {
@@ -86,26 +97,34 @@ function fillVoiceSelect() {
     opt.value = "";
     opt.textContent = "사용 가능한 음성이 없습니다.";
     els.voiceSelect.append(opt);
+    setStatus("음성 데이터를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.", true);
     return;
   }
 
-  voices.forEach((voice, index) => {
+  voices.forEach((voice) => {
     const option = document.createElement("option");
-    option.value = String(index);
+    option.value = voice.voiceURI;
     option.textContent = `${voice.name} (${voice.lang})`;
-    if (voice.lang.startsWith("en")) option.selected = true;
     els.voiceSelect.append(option);
   });
+
+  const preferred = tts.getPreferredVoice();
+  if (preferred) {
+    els.voiceSelect.value = preferred.voiceURI;
+  }
+
+  if (!englishVoices.length) {
+    setStatus("영어 음성을 찾지 못했습니다. 현재 기기 기본 음성으로 재생됩니다.", true);
+  }
 }
 
 function getTtsOptions() {
-  const voices = tts.listVoices();
-  const selected = voices[Number(els.voiceSelect.value)] || voices.find((v) => v.lang.startsWith("en"));
+  const selectedVoice = tts.getPreferredVoice(els.voiceSelect.value);
 
   return {
-    voice: selected,
-    rate: Number(els.rateRange.value),
-    pitch: Number(els.pitchRange.value),
+    voice: selectedVoice,
+    rate: Number(els.rateSelect.value),
+    pitch: 1,
     pauseMs: Number(els.pauseMs.value),
   };
 }
@@ -117,8 +136,8 @@ async function playChunks(chunks, modeLabel, withRepeat = false) {
   }
 
   try {
-    setStatus(`${modeLabel} 재생을 시작합니다...`);
     renderPreview(chunks);
+    setStatus(`${modeLabel} 재생을 시작합니다...`);
 
     await tts.speakSequence(
       chunks,
@@ -127,10 +146,10 @@ async function playChunks(chunks, modeLabel, withRepeat = false) {
         repeat: withRepeat ? Number(els.repeatCount.value) : 1,
       },
       {
-        onChunkStart: (chunk, idx, repeatRound) => {
+        onChunkStart: (_chunk, idx, repeatRound) => {
           const repeatMessage = withRepeat ? ` (반복 ${repeatRound + 1}회)` : "";
           setStatus(`${modeLabel}: ${idx + 1}/${chunks.length} 재생 중${repeatMessage}`);
-          els.preview.innerHTML = `<strong>${chunk}</strong>`;
+          highlightSegment(idx);
         },
       }
     );
@@ -138,6 +157,24 @@ async function playChunks(chunks, modeLabel, withRepeat = false) {
     setStatus(`${modeLabel} 재생이 완료되었습니다.`);
   } catch (error) {
     setStatus(`재생 중 오류: ${error.message || error}`, true);
+  }
+}
+
+async function playAllText() {
+  const text = getCurrentText();
+  if (!text) {
+    setStatus("먼저 텍스트를 입력해 주세요.", true);
+    return;
+  }
+
+  try {
+    renderPreview([text]);
+    highlightSegment(0);
+    setStatus("전체 재생을 시작합니다...");
+    await tts.speakAll(text, getTtsOptions());
+    setStatus("전체 재생이 완료되었습니다.");
+  } catch (error) {
+    setStatus(`전체 재생 오류: ${error.message || error}`, true);
   }
 }
 
@@ -217,22 +254,15 @@ function bindEvents() {
     try {
       await navigator.clipboard.writeText(text);
       setStatus("OCR 텍스트를 클립보드에 복사했습니다.");
-    } catch (error) {
+    } catch {
       setStatus("브라우저 보안 설정으로 복사에 실패했습니다. 텍스트를 직접 선택해 복사해 주세요.", true);
     }
   });
 
-  els.playWordsBtn.addEventListener("click", () => {
-    playChunks(splitWords(getCurrentText()), "단어 단위");
-  });
-
-  els.playSentencesBtn.addEventListener("click", () => {
-    playChunks(splitSentences(getCurrentText()), "문장 단위");
-  });
-
-  els.dictationBtn.addEventListener("click", () => {
-    playChunks(splitSentences(getCurrentText()), "받아쓰기 모드", true);
-  });
+  els.playAllBtn.addEventListener("click", playAllText);
+  els.playWordsBtn.addEventListener("click", () => playChunks(splitWords(getCurrentText()), "단어 단위"));
+  els.playSentencesBtn.addEventListener("click", () => playChunks(splitSentences(getCurrentText()), "문장 단위"));
+  els.dictationBtn.addEventListener("click", () => playChunks(splitSentences(getCurrentText()), "받아쓰기 모드", true));
 
   els.stopBtn.addEventListener("click", () => {
     tts.stop();
@@ -242,8 +272,8 @@ function bindEvents() {
 
 function init() {
   bindEvents();
-  fillVoiceSelect();
   setStatus("준비되었습니다.");
+  fillVoiceSelect();
 
   if (window.speechSynthesis) {
     window.speechSynthesis.onvoiceschanged = fillVoiceSelect;

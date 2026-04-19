@@ -11,6 +11,27 @@ export class BrowserTTSProvider {
     return this.synth.getVoices();
   }
 
+  listEnglishVoices() {
+    return this.listVoices().filter((voice) => voice.lang.toLowerCase().startsWith("en"));
+  }
+
+  findVoiceByURI(voiceURI) {
+    return this.listVoices().find((voice) => voice.voiceURI === voiceURI);
+  }
+
+  getPreferredVoice(voiceURI) {
+    if (voiceURI) {
+      const chosen = this.findVoiceByURI(voiceURI);
+      if (chosen) return chosen;
+    }
+
+    const english = this.listEnglishVoices();
+    if (english.length) return english[0];
+
+    const any = this.listVoices();
+    return any[0] || null;
+  }
+
   stop() {
     this.synth.cancel();
   }
@@ -29,9 +50,7 @@ export class BrowserTTSProvider {
       utterance.pitch = pitch;
       utterance.lang = lang;
 
-      if (voice) {
-        utterance.voice = voice;
-      }
+      if (voice) utterance.voice = voice;
 
       utterance.onend = () => resolve();
       utterance.onerror = (event) => reject(event.error || new Error("TTS error"));
@@ -55,9 +74,23 @@ export class TTSService {
     return this.provider.listVoices();
   }
 
+  listEnglishVoices() {
+    return this.provider.listEnglishVoices();
+  }
+
+  getPreferredVoice(voiceURI) {
+    return this.provider.getPreferredVoice(voiceURI);
+  }
+
   stop() {
     this.cancelled = true;
     this.provider.stop();
+  }
+
+  async speakAll(text, options = {}) {
+    this.cancelled = false;
+    if (!text) return;
+    await this.provider.speak(text, options);
   }
 
   async speakSequence(chunks, options = {}, callbacks = {}) {
@@ -83,6 +116,5 @@ export class TTSService {
 }
 
 export function createDefaultTTSService() {
-  const browserProvider = new BrowserTTSProvider();
-  return new TTSService(browserProvider);
+  return new TTSService(new BrowserTTSProvider());
 }
