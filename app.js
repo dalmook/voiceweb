@@ -5,9 +5,12 @@ import { splitSentences, splitWords } from "./parser.js";
 const SAMPLE_TEXT = `Learning English pronunciation takes steady practice.
 Listen carefully, repeat clearly, and focus on rhythm.`;
 let previewUrl = "";
+let dictationRunId = 0;
+let isDictationRunning = false;
 
 const els = {
   inputText: document.querySelector("#input-text"),
+  sourceTextBlock: document.querySelector("#source-text-block"),
   imageFile: document.querySelector("#image-file"),
   ocrText: document.querySelector("#ocr-text"),
   sampleBtn: document.querySelector("#sample-btn"),
@@ -19,9 +22,15 @@ const els = {
   playWordsBtn: document.querySelector("#play-words-btn"),
   playSentencesBtn: document.querySelector("#play-sentences-btn"),
   stopBtn: document.querySelector("#stop-btn"),
-  dictationBtn: document.querySelector("#dictation-btn"),
+  dictationStartBtn: document.querySelector("#dictation-start-btn"),
+  dictationStopBtn: document.querySelector("#dictation-stop-btn"),
+  dictationProgress: document.querySelector("#dictation-progress"),
+  dictationUnit: document.querySelector("#dictation-unit"),
   repeatCount: document.querySelector("#repeat-count"),
-  pauseMs: document.querySelector("#pause-ms"),
+  repeatPauseMs: document.querySelector("#repeat-pause-ms"),
+  nextItemPauseMs: document.querySelector("#next-item-pause-ms"),
+  hideTextWhileRunning: document.querySelector("#hide-text-while-running"),
+  showAnswerToggle: document.querySelector("#show-answer-toggle"),
   rateSelect: document.querySelector("#rate-select"),
   voiceSelect: document.querySelector("#voice-select"),
   status: document.querySelector("#status-message"),
@@ -36,8 +45,21 @@ function setStatus(message, isError = false) {
   els.status.style.color = isError ? "#b42318" : "#0f9d58";
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function getCurrentText() {
   return els.inputText.value.trim();
+}
+
+function updateDictationProgress(current = 0, total = 0) {
+  if (!total) {
+    els.dictationProgress.textContent = "진행 상황: - / -";
+    return;
+  }
+
+  els.dictationProgress.textContent = `진행 상황: ${current} / ${total}`;
 }
 
 function renderPreview(items = []) {
@@ -57,6 +79,11 @@ function highlightSegment(index) {
     const active = Number(chip.dataset.idx) === index;
     chip.classList.toggle("active", active);
   });
+}
+
+function updateAnswerVisibility() {
+  const shouldHide = isDictationRunning && els.hideTextWhileRunning.checked && !els.showAnswerToggle.checked;
+  els.sourceTextBlock.classList.toggle("hidden", shouldHide);
 }
 
 function setOCRLoading(isLoading) {
@@ -109,9 +136,7 @@ function fillVoiceSelect() {
   });
 
   const preferred = tts.getPreferredVoice();
-  if (preferred) {
-    els.voiceSelect.value = preferred.voiceURI;
-  }
+  if (preferred) els.voiceSelect.value = preferred.voiceURI;
 
   if (!englishVoices.length) {
     setStatus("영어 음성을 찾지 못했습니다. 현재 기기 기본 음성으로 재생됩니다.", true);
@@ -125,11 +150,16 @@ function getTtsOptions() {
     voice: selectedVoice,
     rate: Number(els.rateSelect.value),
     pitch: 1,
-    pauseMs: Number(els.pauseMs.value),
   };
 }
 
-async function playChunks(chunks, modeLabel, withRepeat = false) {
+function getDictationItems() {
+  const text = getCurrentText();
+  if (!text) return [];
+  return els.dictationUnit.value === "word" ? splitWords(text) : splitSentences(text);
+}
+
+async function playChunks(chunks, modeLabel) {
   if (!chunks.length) {
     setStatus("먼저 텍스트를 입력해 주세요.", true);
     return;
@@ -143,12 +173,12 @@ async function playChunks(chunks, modeLabel, withRepeat = false) {
       chunks,
       {
         ...getTtsOptions(),
-        repeat: withRepeat ? Number(els.repeatCount.value) : 1,
+        repeat: 1,
+        pauseMs: Number(els.nextItemPauseMs.value),
       },
       {
-        onChunkStart: (_chunk, idx, repeatRound) => {
-          const repeatMessage = withRepeat ? ` (반복 ${repeatRound + 1}회)` : "";
-          setStatus(`${modeLabel}: ${idx + 1}/${chunks.length} 재생 중${repeatMessage}`);
+        onChunkStart: (_chunk, idx) => {
+          setStatus(`${modeLabel}: ${idx + 1}/${chunks.length} 재생 중`);
           highlightSegment(idx);
         },
       }
@@ -178,6 +208,80 @@ async function playAllText() {
   }
 }
 
+async function startDictation() {
+  const items = getDictationItems();
+  if (!items.length) {
+    setStatus("받아쓰기를 시작하려면 텍스트를 먼저 입력해 주세요.", true);
+    return;
+  }
+
+  dictationRunId += 1;
+  const runId = dictationRunId;
+  isDictationRunning = true;
+  const repeatCount = Number(els.repeatCount.value);
+  const repeatPauseMs = Number(els.repeatPauseMs.value);
+  const nextItemPauseMs = Number(els.nextItemPauseMs.value);
+  const modeLabel = els.dictationUnit.value === "word" ? "단어 받아쓰기" : "문장 받아쓰기";
+
+  renderPreview(items);
+  updateAnswerVisibility();
+
+  try {
+    setStatus(`${modeLabel}를 시작합니다.`);
+
+    for (let i = 0; i < items.length; i += 1) {
+      if (!isDictationRunning || runId !== dictationRunId) break;
+
+      updateDictationProgress(i + 1, items.length);
+      highlightSegment(i);
+
+      for (let r = 0; r < repeatCount; r += 1) {
+        if (!isDictationRunning || runId !== dictationRunId) break;
+
+        setStatus(`${modeLabel} ${i + 1}/${items.length} (반복 ${r + 1}/${repeatCount})`);
+        await tts.speakAll(items[i], getTtsOptions());
+
+        if (r < repeatCount - 1) {
+          await sleep(repeatPauseMs);
+        }
+      }
+
+      if (i < items.length - 1) {
+        await sleep(nextItemPauseMs);
+      }
+    }
+
+    if (runId === dictationRunId) {
+      setStatus("받아쓰기가 완료되었습니다.");
+    }
+  } catch (error) {
+    if (runId !== dictationRunId || !isDictationRunning) {
+      return;
+    }
+    setStatus(`받아쓰기 중 오류: ${error.message || error}`, true);
+  } finally {
+    if (runId === dictationRunId) {
+      isDictationRunning = false;
+      updateAnswerVisibility();
+      updateDictationProgress(0, 0);
+    }
+  }
+}
+
+function stopDictation() {
+  if (!isDictationRunning) {
+    setStatus("현재 진행 중인 받아쓰기가 없습니다.");
+    return;
+  }
+
+  isDictationRunning = false;
+  dictationRunId += 1;
+  tts.stop();
+  updateAnswerVisibility();
+  updateDictationProgress(0, 0);
+  setStatus("받아쓰기를 중지했습니다.");
+}
+
 function bindEvents() {
   els.sampleBtn.addEventListener("click", () => {
     els.inputText.value = SAMPLE_TEXT;
@@ -187,13 +291,20 @@ function bindEvents() {
 
   els.resetBtn.addEventListener("click", () => {
     tts.stop();
+    isDictationRunning = false;
+    dictationRunId += 1;
     els.inputText.value = "";
     els.ocrText.value = "";
     els.imageFile.value = "";
     renderImagePreview(null);
     renderPreview([]);
+    updateAnswerVisibility();
+    updateDictationProgress(0, 0);
     setStatus("초기화되었습니다.");
   });
+
+  els.hideTextWhileRunning.addEventListener("change", updateAnswerVisibility);
+  els.showAnswerToggle.addEventListener("change", updateAnswerVisibility);
 
   els.imageFile.addEventListener("change", (event) => {
     const file = event.target.files?.[0];
@@ -262,10 +373,15 @@ function bindEvents() {
   els.playAllBtn.addEventListener("click", playAllText);
   els.playWordsBtn.addEventListener("click", () => playChunks(splitWords(getCurrentText()), "단어 단위"));
   els.playSentencesBtn.addEventListener("click", () => playChunks(splitSentences(getCurrentText()), "문장 단위"));
-  els.dictationBtn.addEventListener("click", () => playChunks(splitSentences(getCurrentText()), "받아쓰기 모드", true));
+  els.dictationStartBtn.addEventListener("click", startDictation);
+  els.dictationStopBtn.addEventListener("click", stopDictation);
 
   els.stopBtn.addEventListener("click", () => {
     tts.stop();
+    if (isDictationRunning) {
+      stopDictation();
+      return;
+    }
     setStatus("재생을 중지했습니다.");
   });
 }
@@ -274,6 +390,7 @@ function init() {
   bindEvents();
   setStatus("준비되었습니다.");
   fillVoiceSelect();
+  updateDictationProgress(0, 0);
 
   if (window.speechSynthesis) {
     window.speechSynthesis.onvoiceschanged = fillVoiceSelect;

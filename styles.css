@@ -132,6 +132,23 @@ button:disabled {
   gap: 0.5rem;
 }
 
+.toggle-row {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0.8rem 0;
+  color: var(--muted);
+}
+
+.progress-text {
+  margin: 0.2rem 0 0.6rem;
+  font-weight: 700;
+  color: #17458f;
+}
+
+#source-text-block.hidden {
+  display: none;
+}
+
 .status {
   margin: 0 0 0.6rem;
   color: var(--success);

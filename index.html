@@ -15,8 +15,10 @@
 
       <section class="card" aria-labelledby="text-input-title">
         <h2 id="text-input-title">2) 텍스트 입력</h2>
-        <label for="input-text">연습할 영어 텍스트</label>
-        <textarea id="input-text" rows="6" placeholder="여기에 텍스트를 붙여넣거나 직접 입력하세요."></textarea>
+        <div id="source-text-block">
+          <label for="input-text">연습할 영어 텍스트</label>
+          <textarea id="input-text" rows="6" placeholder="여기에 텍스트를 붙여넣거나 직접 입력하세요."></textarea>
+        </div>
         <div class="button-row">
           <button id="sample-btn" type="button">샘플 문장 넣기</button>
           <button id="reset-btn" class="secondary" type="button">초기화</button>
@@ -70,12 +72,39 @@
         <h2 id="dictation-title">6) 받아쓰기 모드</h2>
         <div class="grid-controls">
           <label for="repeat-count">반복 횟수</label>
-          <input id="repeat-count" type="number" min="1" max="10" value="2" />
+          <select id="repeat-count">
+            <option value="1">1회</option>
+            <option value="2" selected>2회</option>
+            <option value="3">3회</option>
+          </select>
 
-          <label for="pause-ms">문장 사이 쉬는 시간(ms)</label>
-          <input id="pause-ms" type="number" min="200" max="10000" step="100" value="1200" />
+          <label for="dictation-unit">학습 단위</label>
+          <select id="dictation-unit">
+            <option value="sentence" selected>문장</option>
+            <option value="word">단어</option>
+          </select>
+
+          <label for="repeat-pause-ms">반복 사이 쉬는 시간(ms)</label>
+          <input id="repeat-pause-ms" type="number" min="200" max="5000" step="100" value="700" />
+
+          <label for="next-item-pause-ms">다음 문제 전 쉬는 시간(ms)</label>
+          <input id="next-item-pause-ms" type="number" min="200" max="10000" step="100" value="1200" />
         </div>
-        <button id="dictation-btn" type="button">받아쓰기 시작</button>
+        <div class="toggle-row">
+          <label><input id="hide-text-while-running" type="checkbox" /> 진행 중 원문 숨기기</label>
+          <label><input id="show-answer-toggle" type="checkbox" checked /> 정답 보기</label>
+        </div>
+        <p id="dictation-progress" class="progress-text">진행 상황: - / -</p>
+        <div class="button-row">
+          <button id="dictation-start-btn" type="button">받아쓰기 시작</button>
+          <button id="dictation-stop-btn" class="secondary" type="button">받아쓰기 중지</button>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="wrong-items-title">
+        <h2 id="wrong-items-title">6-1) 틀린 문제만 다시 연습 (준비 중)</h2>
+        <p class="subtitle">다음 단계에서 틀린 항목 저장/불러오기를 지원할 예정입니다.</p>
+        <label><input type="checkbox" disabled /> 틀린 항목만 재생 (곧 제공)</label>
       </section>
 
       <section class="card" aria-labelledby="status-title">
