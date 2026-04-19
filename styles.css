@@ -25,16 +25,16 @@ body {
 .app {
   width: min(980px, 100%);
   margin: 0 auto;
-  padding: 1rem;
+  padding: 1rem 1rem 1.6rem;
   display: grid;
-  gap: 0.9rem;
+  gap: 1rem;
 }
 
 .card {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 16px;
-  padding: 1rem;
+  padding: 1.1rem;
   box-shadow: 0 6px 22px rgba(0, 0, 0, 0.06);
 }
 
@@ -85,7 +85,7 @@ input[type="range"] {
 button {
   border: none;
   border-radius: 10px;
-  padding: 0.65rem 0.9rem;
+  padding: 0.72rem 0.95rem;
   background: var(--primary);
   color: #fff;
   font-weight: 600;
@@ -101,6 +101,11 @@ button.secondary {
   color: #1f2933;
 }
 
+button.primary {
+  background: linear-gradient(180deg, #2f6fed 0%, #2458c7 100%);
+  box-shadow: 0 4px 14px rgba(47, 111, 237, 0.25);
+}
+
 button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -110,7 +115,7 @@ button:disabled {
   display: grid;
   gap: 0.5rem;
   grid-template-columns: 1fr;
-  margin-top: 0.6rem;
+  margin-top: 0.8rem;
 }
 
 .image-preview-wrap {
@@ -139,6 +144,17 @@ button:disabled {
   color: var(--muted);
 }
 
+.hint-card {
+  background: #f8fbff;
+}
+
+.hint-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  line-height: 1.65;
+  color: #334e68;
+}
+
 .progress-text {
   margin: 0.2rem 0 0.6rem;
   font-weight: 700;
@@ -157,12 +173,23 @@ button:disabled {
 
 .status {
   margin: 0 0 0.6rem;
-  color: var(--success);
   font-weight: 600;
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+}
+
+.status-ok {
+  background: #eaf8f0;
+  color: var(--success);
+}
+
+.status-error {
+  background: #fdecec;
+  color: #b42318;
 }
 
 .preview {
-  min-height: 72px;
+  min-height: 86px;
   border: 1px dashed var(--line);
   border-radius: 10px;
   padding: 0.75rem;
@@ -170,6 +197,17 @@ button:disabled {
   line-height: 1.45;
   color: var(--muted);
   background: #fafcff;
+}
+
+.preview.empty {
+  color: #7b8794;
+}
+
+.footer-note {
+  text-align: center;
+  font-size: 0.87rem;
+  color: #616e7c;
+  padding: 0.3rem 0 0.8rem;
 }
 
 .segment {

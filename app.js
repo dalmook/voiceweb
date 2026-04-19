@@ -44,7 +44,8 @@ const tts = createDefaultTTSService();
 
 function setStatus(message, isError = false) {
   els.status.textContent = message;
-  els.status.style.color = isError ? "#b42318" : "#0f9d58";
+  els.status.classList.toggle("status-error", isError);
+  els.status.classList.toggle("status-ok", !isError);
 }
 
 function sleep(ms) {
@@ -73,9 +74,11 @@ function updateDictationProgress(current = 0, total = 0) {
 function renderPreview(items = []) {
   if (!items.length) {
     els.preview.textContent = "미리보기 항목이 없습니다.";
+    els.preview.classList.add("empty");
     return;
   }
 
+  els.preview.classList.remove("empty");
   els.preview.innerHTML = items
     .map((item, idx) => `<span class="segment" data-idx="${idx}">${item}</span>`)
     .join("");

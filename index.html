@@ -13,6 +13,16 @@
         <p class="subtitle">텍스트를 입력하거나 이미지에서 글자를 추출해 문장/단어 단위로 듣고 받아쓰기 연습을 해보세요.</p>
       </header>
 
+      <section class="card hint-card" aria-labelledby="onboarding-title">
+        <h2 id="onboarding-title">빠른 시작 가이드</h2>
+        <ol class="hint-list">
+          <li>텍스트를 입력하거나 붙여넣기</li>
+          <li>또는 이미지 업로드 후 OCR 추출</li>
+          <li>재생 모드(전체/문장/단어) 선택</li>
+          <li>받아쓰기 시작</li>
+        </ol>
+      </section>
+
       <section class="card" aria-labelledby="text-input-title">
         <h2 id="text-input-title">2) 텍스트 입력</h2>
         <div id="source-text-block">
@@ -33,7 +43,7 @@
         <div class="image-preview-wrap">
           <img id="image-preview" class="image-preview" alt="업로드한 이미지 미리보기" hidden />
         </div>
-        <button id="ocr-btn" type="button">이미지에서 텍스트 추출(OCR)</button>
+        <button id="ocr-btn" class="primary" type="button">이미지에서 텍스트 추출(OCR)</button>
       </section>
 
       <section class="card" aria-labelledby="ocr-result-title">
@@ -62,7 +72,7 @@
         </div>
 
         <div class="button-row">
-          <button id="play-all-btn" type="button">전체 재생</button>
+          <button id="play-all-btn" class="primary" type="button">전체 재생</button>
           <button id="play-sentences-btn" type="button">문장 단위 재생</button>
           <button id="play-words-btn" type="button">단어 단위 재생</button>
           <button id="stop-btn" class="secondary" type="button">정지</button>
@@ -97,7 +107,7 @@
         </div>
         <p id="dictation-progress" class="progress-text">진행 상황: - / -</p>
         <div class="button-row">
-          <button id="dictation-start-btn" type="button">받아쓰기 시작</button>
+          <button id="dictation-start-btn" class="primary" type="button">받아쓰기 시작</button>
           <button id="dictation-stop-btn" class="secondary" type="button">받아쓰기 중지</button>
         </div>
       </section>
@@ -110,10 +120,14 @@
 
       <section class="card" aria-labelledby="status-title">
         <h2 id="status-title">7) 상태 / 미리보기</h2>
-        <p id="status-message" class="status" role="status" aria-live="polite">준비되었습니다.</p>
+        <p id="status-message" class="status status-ok" role="status" aria-live="polite">준비되었습니다.</p>
         <p id="parse-summary" class="parse-summary">감지 결과: 문장 0개 / 단어 0개</p>
-        <div id="preview" class="preview">여기에 분할된 단어/문장 미리보기가 표시됩니다.</div>
+        <div id="preview" class="preview empty">여기에 분할된 단어/문장 미리보기가 표시됩니다.</div>
       </section>
+
+      <footer class="footer-note">
+        Phase 1은 브라우저 Web Speech API를 사용하므로 기기/브라우저에 따라 발음 품질 차이가 있을 수 있습니다.
+      </footer>
     </main>
 
     <script type="module" src="app.js"></script>
