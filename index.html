@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>발음 연습 & 받아쓰기</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="card">
+        <h1>1) 영어 발음 연습 & 받아쓰기</h1>
+        <p class="subtitle">텍스트를 입력하거나 이미지에서 글자를 추출해 문장/단어 단위로 듣고 받아쓰기 연습을 해보세요.</p>
+      </header>
+
+      <section class="card" aria-labelledby="text-input-title">
+        <h2 id="text-input-title">2) 텍스트 입력</h2>
+        <label for="input-text">연습할 영어 텍스트</label>
+        <textarea id="input-text" rows="6" placeholder="여기에 텍스트를 붙여넣거나 직접 입력하세요."></textarea>
+        <div class="button-row">
+          <button id="sample-btn" type="button">샘플 문장 넣기</button>
+          <button id="reset-btn" class="secondary" type="button">초기화</button>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="image-upload-title">
+        <h2 id="image-upload-title">3) 이미지 업로드</h2>
+        <label for="image-file">문장이 포함된 이미지 선택</label>
+        <input id="image-file" type="file" accept="image/*" />
+        <div class="image-preview-wrap">
+          <img id="image-preview" class="image-preview" alt="업로드한 이미지 미리보기" hidden />
+        </div>
+        <button id="ocr-btn" type="button">이미지에서 텍스트 추출(OCR)</button>
+      </section>
+
+      <section class="card" aria-labelledby="ocr-result-title">
+        <h2 id="ocr-result-title">4) OCR 결과 편집</h2>
+        <label for="ocr-text">추출된 텍스트 (수정 가능)</label>
+        <textarea id="ocr-text" rows="6" placeholder="OCR 결과가 여기에 표시됩니다."></textarea>
+        <div class="button-row">
+          <button id="use-ocr-btn" type="button">OCR 결과를 연습 텍스트로 사용</button>
+          <button id="copy-ocr-btn" class="secondary" type="button">OCR 텍스트 복사</button>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="playback-title">
+        <h2 id="playback-title">5) 재생 컨트롤</h2>
+        <div class="grid-controls">
+          <label for="voice-select">음성</label>
+          <select id="voice-select"></select>
+
+          <label for="rate-select">재생 속도</label>
+          <select id="rate-select">
+            <option value="0.8">0.8x (천천히)</option>
+            <option value="1" selected>1.0x (기본)</option>
+            <option value="1.2">1.2x (조금 빠르게)</option>
+            <option value="1.4">1.4x (빠르게)</option>
+          </select>
+        </div>
+
+        <div class="button-row">
+          <button id="play-all-btn" type="button">전체 재생</button>
+          <button id="play-sentences-btn" type="button">문장 단위 재생</button>
+          <button id="play-words-btn" type="button">단어 단위 재생</button>
+          <button id="stop-btn" class="secondary" type="button">정지</button>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="dictation-title">
+        <h2 id="dictation-title">6) 받아쓰기 모드</h2>
+        <div class="grid-controls">
+          <label for="repeat-count">반복 횟수</label>
+          <input id="repeat-count" type="number" min="1" max="10" value="2" />
+
+          <label for="pause-ms">문장 사이 쉬는 시간(ms)</label>
+          <input id="pause-ms" type="number" min="200" max="10000" step="100" value="1200" />
+        </div>
+        <button id="dictation-btn" type="button">받아쓰기 시작</button>
+      </section>
+
+      <section class="card" aria-labelledby="status-title">
+        <h2 id="status-title">7) 상태 / 미리보기</h2>
+        <p id="status-message" class="status" role="status" aria-live="polite">준비되었습니다.</p>
+        <div id="preview" class="preview">여기에 분할된 단어/문장 미리보기가 표시됩니다.</div>
+      </section>
+    </main>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
