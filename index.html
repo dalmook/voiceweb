@@ -27,6 +27,9 @@
         <h2 id="image-upload-title">3) 이미지 업로드</h2>
         <label for="image-file">문장이 포함된 이미지 선택</label>
         <input id="image-file" type="file" accept="image/*" />
+        <div class="image-preview-wrap">
+          <img id="image-preview" class="image-preview" alt="업로드한 이미지 미리보기" hidden />
+        </div>
         <button id="ocr-btn" type="button">이미지에서 텍스트 추출(OCR)</button>
       </section>
 
@@ -34,7 +37,10 @@
         <h2 id="ocr-result-title">4) OCR 결과 편집</h2>
         <label for="ocr-text">추출된 텍스트 (수정 가능)</label>
         <textarea id="ocr-text" rows="6" placeholder="OCR 결과가 여기에 표시됩니다."></textarea>
-        <button id="use-ocr-btn" type="button">OCR 결과를 연습 텍스트로 사용</button>
+        <div class="button-row">
+          <button id="use-ocr-btn" type="button">OCR 결과를 연습 텍스트로 사용</button>
+          <button id="copy-ocr-btn" class="secondary" type="button">OCR 텍스트 복사</button>
+        </div>
       </section>
 
       <section class="card" aria-labelledby="playback-title">

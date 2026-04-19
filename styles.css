@@ -101,11 +101,30 @@ button.secondary {
   color: #1f2933;
 }
 
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .button-row {
   display: grid;
   gap: 0.5rem;
   grid-template-columns: 1fr;
   margin-top: 0.6rem;
+}
+
+.image-preview-wrap {
+  margin: 0.7rem 0;
+}
+
+.image-preview {
+  display: block;
+  width: 100%;
+  max-height: 240px;
+  object-fit: contain;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f8fbff;
 }
 
 .grid-controls {

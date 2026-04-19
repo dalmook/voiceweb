@@ -4,6 +4,7 @@ import { splitSentences, splitWords } from "./parser.js";
 
 const SAMPLE_TEXT = `Learning English pronunciation takes steady practice.
 Listen carefully, repeat clearly, and focus on rhythm.`;
+let previewUrl = "";
 
 const els = {
   inputText: document.querySelector("#input-text"),
@@ -13,6 +14,7 @@ const els = {
   resetBtn: document.querySelector("#reset-btn"),
   ocrBtn: document.querySelector("#ocr-btn"),
   useOcrBtn: document.querySelector("#use-ocr-btn"),
+  copyOcrBtn: document.querySelector("#copy-ocr-btn"),
   playWordsBtn: document.querySelector("#play-words-btn"),
   playSentencesBtn: document.querySelector("#play-sentences-btn"),
   stopBtn: document.querySelector("#stop-btn"),
@@ -24,6 +26,7 @@ const els = {
   voiceSelect: document.querySelector("#voice-select"),
   status: document.querySelector("#status-message"),
   preview: document.querySelector("#preview"),
+  imagePreview: document.querySelector("#image-preview"),
 };
 
 const tts = createDefaultTTSService();
@@ -44,6 +47,34 @@ function renderPreview(items) {
   }
 
   els.preview.innerHTML = items.map((item) => `<span class="segment">${item}</span>`).join("");
+}
+
+function setOCRLoading(isLoading) {
+  els.ocrBtn.disabled = isLoading;
+  els.imageFile.disabled = isLoading;
+  els.ocrBtn.textContent = isLoading ? "OCR 처리 중..." : "이미지에서 텍스트 추출(OCR)";
+}
+
+function isPoorOCRResult(text, confidence) {
+  const compact = text.replace(/\s/g, "");
+  return compact.length < 15 || confidence < 55;
+}
+
+function renderImagePreview(file) {
+  if (previewUrl) {
+    URL.revokeObjectURL(previewUrl);
+    previewUrl = "";
+  }
+
+  if (!file) {
+    els.imagePreview.hidden = true;
+    els.imagePreview.removeAttribute("src");
+    return;
+  }
+
+  previewUrl = URL.createObjectURL(file);
+  els.imagePreview.src = previewUrl;
+  els.imagePreview.hidden = false;
 }
 
 function fillVoiceSelect() {
@@ -122,8 +153,17 @@ function bindEvents() {
     els.inputText.value = "";
     els.ocrText.value = "";
     els.imageFile.value = "";
+    renderImagePreview(null);
     renderPreview([]);
     setStatus("초기화되었습니다.");
+  });
+
+  els.imageFile.addEventListener("change", (event) => {
+    const file = event.target.files?.[0];
+    renderImagePreview(file);
+    if (file) {
+      setStatus("이미지 미리보기를 확인한 뒤 OCR 버튼을 눌러 주세요.");
+    }
   });
 
   els.ocrBtn.addEventListener("click", async () => {
@@ -134,20 +174,52 @@ function bindEvents() {
     }
 
     try {
+      setOCRLoading(true);
       setStatus("OCR 준비 중...");
-      const text = await extractTextFromImage(file, (pct) => {
+      const { text, confidence } = await extractTextFromImage(file, (pct) => {
         setStatus(`OCR 진행 중... ${pct}%`);
       });
       els.ocrText.value = text;
-      setStatus("OCR 완료! 결과를 확인해 주세요.");
+
+      if (!text) {
+        setStatus("글자를 거의 인식하지 못했습니다. 이미지를 더 선명하게 준비해 주세요.", true);
+        return;
+      }
+
+      if (isPoorOCRResult(text, confidence)) {
+        setStatus(
+          "OCR 결과가 다소 부정확할 수 있어요. 이미지에서 글자 영역만 잘라내거나 더 선명한 사진으로 다시 시도해 주세요.",
+          true
+        );
+        return;
+      }
+
+      setStatus(`OCR 완료! (신뢰도 약 ${Math.round(confidence)}%) 결과를 확인해 주세요.`);
     } catch (error) {
       setStatus(`OCR 실패: ${error.message || error}`, true);
+    } finally {
+      setOCRLoading(false);
     }
   });
 
   els.useOcrBtn.addEventListener("click", () => {
     els.inputText.value = els.ocrText.value;
     setStatus("OCR 결과를 입력 텍스트로 복사했습니다.");
+  });
+
+  els.copyOcrBtn.addEventListener("click", async () => {
+    const text = els.ocrText.value;
+    if (!text.trim()) {
+      setStatus("복사할 OCR 텍스트가 없습니다.", true);
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(text);
+      setStatus("OCR 텍스트를 클립보드에 복사했습니다.");
+    } catch (error) {
+      setStatus("브라우저 보안 설정으로 복사에 실패했습니다. 텍스트를 직접 선택해 복사해 주세요.", true);
+    }
   });
 
   els.playWordsBtn.addEventListener("click", () => {

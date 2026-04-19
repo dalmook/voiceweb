@@ -46,5 +46,8 @@ export async function extractTextFromImage(file, onProgress) {
     },
   });
 
-  return (result.data.text || "").trim();
+  return {
+    text: (result.data.text || "").trim(),
+    confidence: Number(result.data.confidence || 0),
+  };
 }
