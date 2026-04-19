@@ -145,6 +145,12 @@ button:disabled {
   color: #17458f;
 }
 
+.parse-summary {
+  margin: 0 0 0.6rem;
+  color: #334e68;
+  font-weight: 600;
+}
+
 #source-text-block.hidden {
   display: none;
 }

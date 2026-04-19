@@ -1,6 +1,6 @@
 import { extractTextFromImage } from "./ocr.js";
 import { createDefaultTTSService } from "./tts.js";
-import { splitSentences, splitWords } from "./parser.js";
+import { cleanOcrText, getSentences, getWords } from "./parser.js";
 
 const SAMPLE_TEXT = `Learning English pronunciation takes steady practice.
 Listen carefully, repeat clearly, and focus on rhythm.`;
@@ -14,6 +14,7 @@ const els = {
   imageFile: document.querySelector("#image-file"),
   ocrText: document.querySelector("#ocr-text"),
   sampleBtn: document.querySelector("#sample-btn"),
+  normalizeBtn: document.querySelector("#normalize-btn"),
   resetBtn: document.querySelector("#reset-btn"),
   ocrBtn: document.querySelector("#ocr-btn"),
   useOcrBtn: document.querySelector("#use-ocr-btn"),
@@ -34,6 +35,7 @@ const els = {
   rateSelect: document.querySelector("#rate-select"),
   voiceSelect: document.querySelector("#voice-select"),
   status: document.querySelector("#status-message"),
+  parseSummary: document.querySelector("#parse-summary"),
   preview: document.querySelector("#preview"),
   imagePreview: document.querySelector("#image-preview"),
 };
@@ -51,6 +53,12 @@ function sleep(ms) {
 
 function getCurrentText() {
   return els.inputText.value.trim();
+}
+
+function updateParseSummary(text = getCurrentText()) {
+  const sentenceCount = getSentences(text).length;
+  const wordCount = getWords(text).length;
+  els.parseSummary.textContent = `감지 결과: 문장 ${sentenceCount}개 / 단어 ${wordCount}개`;
 }
 
 function updateDictationProgress(current = 0, total = 0) {
@@ -156,7 +164,7 @@ function getTtsOptions() {
 function getDictationItems() {
   const text = getCurrentText();
   if (!text) return [];
-  return els.dictationUnit.value === "word" ? splitWords(text) : splitSentences(text);
+  return els.dictationUnit.value === "word" ? getWords(text) : getSentences(text);
 }
 
 async function playChunks(chunks, modeLabel) {
@@ -286,7 +294,15 @@ function bindEvents() {
   els.sampleBtn.addEventListener("click", () => {
     els.inputText.value = SAMPLE_TEXT;
     setStatus("샘플 문장을 불러왔습니다.");
-    renderPreview(splitSentences(SAMPLE_TEXT));
+    renderPreview(getSentences(SAMPLE_TEXT));
+    updateParseSummary();
+  });
+
+  els.normalizeBtn.addEventListener("click", () => {
+    const normalized = cleanOcrText(els.inputText.value);
+    els.inputText.value = normalized;
+    updateParseSummary(normalized);
+    setStatus("텍스트 공백/빈 줄을 정리했습니다.");
   });
 
   els.resetBtn.addEventListener("click", () => {
@@ -298,6 +314,7 @@ function bindEvents() {
     els.imageFile.value = "";
     renderImagePreview(null);
     renderPreview([]);
+    updateParseSummary("");
     updateAnswerVisibility();
     updateDictationProgress(0, 0);
     setStatus("초기화되었습니다.");
@@ -305,6 +322,7 @@ function bindEvents() {
 
   els.hideTextWhileRunning.addEventListener("change", updateAnswerVisibility);
   els.showAnswerToggle.addEventListener("change", updateAnswerVisibility);
+  els.inputText.addEventListener("input", () => updateParseSummary());
 
   els.imageFile.addEventListener("change", (event) => {
     const file = event.target.files?.[0];
@@ -327,7 +345,7 @@ function bindEvents() {
       const { text, confidence } = await extractTextFromImage(file, (pct) => {
         setStatus(`OCR 진행 중... ${pct}%`);
       });
-      els.ocrText.value = text;
+      els.ocrText.value = cleanOcrText(text);
 
       if (!text) {
         setStatus("글자를 거의 인식하지 못했습니다. 이미지를 더 선명하게 준비해 주세요.", true);
@@ -352,6 +370,7 @@ function bindEvents() {
 
   els.useOcrBtn.addEventListener("click", () => {
     els.inputText.value = els.ocrText.value;
+    updateParseSummary();
     setStatus("OCR 결과를 입력 텍스트로 복사했습니다.");
   });
 
@@ -371,8 +390,8 @@ function bindEvents() {
   });
 
   els.playAllBtn.addEventListener("click", playAllText);
-  els.playWordsBtn.addEventListener("click", () => playChunks(splitWords(getCurrentText()), "단어 단위"));
-  els.playSentencesBtn.addEventListener("click", () => playChunks(splitSentences(getCurrentText()), "문장 단위"));
+  els.playWordsBtn.addEventListener("click", () => playChunks(getWords(getCurrentText()), "단어 단위"));
+  els.playSentencesBtn.addEventListener("click", () => playChunks(getSentences(getCurrentText()), "문장 단위"));
   els.dictationStartBtn.addEventListener("click", startDictation);
   els.dictationStopBtn.addEventListener("click", stopDictation);
 
@@ -391,6 +410,7 @@ function init() {
   setStatus("준비되었습니다.");
   fillVoiceSelect();
   updateDictationProgress(0, 0);
+  updateParseSummary("");
 
   if (window.speechSynthesis) {
     window.speechSynthesis.onvoiceschanged = fillVoiceSelect;
